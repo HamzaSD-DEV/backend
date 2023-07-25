@@ -1,24 +1,11 @@
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
-const validator = require('validator');
+const validateData = require('../middleware/dataValidation')
 
 const createUser = async (req, res) => {
     const {username, email, password} = req.body;
     const emailVal = email.toLowerCase();
-    if (!validator.isAlphanumeric(username, 'en-US', {ignore: '-_'})) {
-        return res.status(400).json({error: 'Invalid username format use only characters and numbers'});
-    } else if (!validator.isEmail(email)) {
-        return res.status(400).json({error: 'Invalid email format'});
-    } else if (!validator.isStrongPassword(password, {
-        minLength: 8,
-        minLowercase: 0,
-        minUppercase: 1,
-        minNumbers: 0,
-        minSymbols: 0,
-        returnScore: false,
-    })) {
-        return res.status(400).json({error: 'Invalid password format at least 8 characters with lower and uppercase'});
-    }
+    validateData.validateSignin(username,email,password);
     bcrypt.hash(password, 10, async function (err, hash) {
         if (err) {
             console.error('hash generation fails ', err);
@@ -73,7 +60,6 @@ const updateUserById = async (req, res) => {
 
         // Find the user by ID
         let user = await User.findById(userId);
-
         if (!user) {
             return res.status(404).json({error: 'User not found'});
         }
@@ -131,4 +117,4 @@ const updateUserEmail = async (req, res) => {
 };
 
 
-module.exports = {createUser}
+module.exports = {createUser,getAllUsers,getUserById,updateUserById,updateUserEmail,deleteUserById}

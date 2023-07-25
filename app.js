@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cors=require('cors')
 const bodyParser = require("body-parser");
@@ -15,6 +16,5 @@ app.use(bodyParser.json())
 
 // Routes
 app.use('/api', userRoutes);
-// Other routes...
-
+app.use('/api', authRoutes);
 module.exports = app;
