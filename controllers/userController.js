@@ -1,41 +1,11 @@
 const User = require('../models/userModel');
-const bcrypt = require('bcrypt');
-const validateData = require('../middleware/dataValidation')
+const dataValidation = require("../middleware/dataValidation")
+const bcrypt = require("bcrypt");
 
-const createUser = async (req, res) => {
-    const {username, email, password} = req.body;
-    const emailVal = email.toLowerCase();
-    validateData.validateSignin(username,email,password);
-    bcrypt.hash(password, 10, async function (err, hash) {
-        if (err) {
-            console.error('hash generation fails ', err);
-            return res.status(500).json({error: 'hash generation fails'});
-        } else {
 
-            try {
-                const existingUsername = await User.findOne({"username": username});
-                if (existingUsername) {
-                    return res.status(400).json({error: 'Username already used'});
-                }
-                const existingEmail = await User.findOne({"email": emailVal});
-                if (existingEmail) {
-                    return res.status(400).json({error: 'Email already used'});
-                }
-                const newUser = new User({username: username, email: emailVal, password: hash});
-                await newUser.save();
-                res.status(201).json({message: 'User created successfully', user: newUser});
-            } catch (err) {
-                console.log('Error creating user', err)
-                res.status(500).json({error: 'Error creating user\n',err});
-            }
-
-        }
-    });
-
-};
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find();
+        const users = await User.find().select('username email _id');
         res.status(200).json(users);
     } catch (err) {
         res.status(500).json({error: 'Error fetching users'});
@@ -43,8 +13,8 @@ const getAllUsers = async (req, res) => {
 };
 const getUserById = async (req, res) => {
     try {
-        const {userId} = req.params;
-        const user = await User.findById(userId);
+        const userId = req.params.id;
+        const user = await User.findById(userId).select('_id username email');
         if (!user) {
             return res.status(404).json({error: 'User not found'});
         }
@@ -55,26 +25,53 @@ const getUserById = async (req, res) => {
 };
 const updateUserById = async (req, res) => {
     try {
-        const {userId} = req.params;
-        const {username, email, password} = req.body;
+        const userId = req.params.id;
+        const { username, email, password } = req.body;
 
         // Find the user by ID
         let user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({error: 'User not found'});
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Validate user data
+        dataValidation.validateAll(username, email, password);
+
+        // Check if username or email is already used
+        const existingUsername = await User.findOne({ "username": username });
+        if (existingUsername && existingUsername._id.toString() !== userId) {
+            return res.status(400).json({ error: 'Username already used' });
+        }
+
+        const existingEmail = await User.findOne({ "email": email });
+        if (existingEmail && existingEmail._id.toString() !== userId) {
+            return res.status(400).json({ error: 'Email already used' });
         }
 
         // Update user properties
-        user.username = username;
-        user.email = email;
-        user.password = password;
+        user.username = username ? username : user.username;
+        user.email = email ? email.toLowerCase() : user.email;
+        user.password = password ? password : user.password;
 
-        // Save the updated user
-        user = await user.save();
+        // Hash the password
+        bcrypt.hash(user.password, 10, async function (err, hash) {
+            if (err) {
+                console.error('hash generation fails ', err);
+                return res.status(500).json({ error: 'hash generation fails' });
+            }
 
-        res.status(200).json({message: 'User updated successfully', user});
+            // Save the updated user
+            try {
+                user.password = hash; // Save the hashed password
+                user = await user.save();
+                res.status(200).json({ message: 'User updated successfully', user });
+            } catch (err) {
+                console.log('Error updating user', err);
+                res.status(500).json({ error: 'Error updating user' });
+            }
+        });
     } catch (err) {
-        res.status(500).json({error: 'Error updating user'});
+        res.status(500).json({ error: 'Error updating user' });
     }
 };
 
@@ -117,4 +114,4 @@ const updateUserEmail = async (req, res) => {
 };
 
 
-module.exports = {createUser,getAllUsers,getUserById,updateUserById,updateUserEmail,deleteUserById}
+module.exports = {getAllUsers,getUserById,updateUserById,updateUserEmail,deleteUserById}

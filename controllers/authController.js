@@ -1,15 +1,42 @@
 const validateData = require("../middleware/dataValidation");
-const bcrypt = require("bcrypt");
+
 const User = require("../models/userModel");
-const auth = require("../middleware/auth")
-const {jwtSecretKey} = require("../config/config");
-const jwt =require("jsonwebtoken")
+const {createJwtToken} = require("../middleware/auth");
+const bcrypt = require("bcrypt");
+const signin = async (req, res) => {
+    const {username, email, password} = req.body;
+    const emailVal = email.toLowerCase();
+    validateData.validateSignin(username,email,password);
+    bcrypt.hash(password, 10, async function (err, hash) {
+        if (err) {
+            console.error('hash generation fails ', err);
+            return res.status(500).json({error: 'hash generation fails'});
+        } else {
+
+            try {
+                const existingUsername = await User.findOne({"username": username});
+                if (existingUsername) {
+                    return res.status(400).json({error: 'Username already used'});
+                }
+                const existingEmail = await User.findOne({"email": emailVal});
+                if (existingEmail) {
+                    return res.status(400).json({error: 'Email already used'});
+                }
+                const newUser = new User({username: username, email: emailVal, password: hash});
+                await newUser.save();
+                res.status(201).json({message: 'User created successfully', user: newUser});
+            } catch (err) {
+                console.log('Error creating user', err)
+                res.status(500).json({error: 'Error creating user\n',err});
+            }
+
+        }
+    });
+
+};
 const login = async (req, res) => {
     const {userInput, password} = req.body;
-    console.log(userInput, password)
     const inputType = validateData.validatelogin(userInput, password, res);
-    console.log(inputType)
-
     const isExistingUser = async (userInput, password) => {
         if (inputType === "it's a username") {
             try {
@@ -17,12 +44,7 @@ const login = async (req, res) => {
                 if (!existingUser) {
                     return res.status(400).json({error: `this username ${userInput} doesn't exist`});
                 } else {
-                    bcrypt.compare(password, existingUser.password, function (err, result) {
-                        if (result) {
-                            return res.status(200).json({message: "Login successfully"});
-                        } else
-                            return res.status(400).json({error: "Wrong password !!"});
-                    });
+                    createJwtToken(password,existingUser,res);
                 }
             } catch (err) {
                 console.log('Error creating user', err)
@@ -35,18 +57,11 @@ const login = async (req, res) => {
                 if (!existingUser) {
                     return res.status(400).json({error: `This email ${userInput} doesn't exist`});
                 } else {
-                    bcrypt.compare(password, existingUser.password, function (err, result) {
-                        if (result) {
-                            const token = jwt.sign({existingUser}, jwtSecretKey, {expiresIn: "1h"});
-                            console.log(token);
-                            return res.status(200).json({message: "Login successfully",token: token});
-                        } else
-                            return res.status(400).json({error: "Wrong password !!"});
-                    });
+                    createJwtToken(password,existingUser,res);
                 }
             } catch (err) {
                 console.log('Error finding user\n', err)
-                res.status(500).json({error: 'Error finding user\n', err});
+                res.status(500).json({error: 'Error finding user', err});
             }
         } else {
             console.log("Internal Error Invalid inputType ", inputType)
@@ -57,4 +72,4 @@ const login = async (req, res) => {
 
 };
 
-module.exports = {login}
+module.exports = {login,signin}
