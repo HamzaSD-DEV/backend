@@ -6,7 +6,7 @@ const bcrypt = require("bcrypt");
 const signin = async (req, res) => {
     const {username, email, password} = req.body;
     const emailVal = email.toLowerCase();
-    validateData.validateSignin(username,email,password);
+    validateData.validateAll(username,email,password);
     bcrypt.hash(password, 10, async function (err, hash) {
         if (err) {
             console.error('hash generation fails ', err);
@@ -48,7 +48,7 @@ const login = async (req, res) => {
                 }
             } catch (err) {
                 console.log('Error creating user', err)
-                res.status(500).json({error: 'Error creating user\n', err});
+                res.status(500).json({error: 'Error creating user', err});
             }
         } else if (inputType === "it's an email") {
             try {
@@ -60,7 +60,7 @@ const login = async (req, res) => {
                     createJwtToken(password,existingUser,res);
                 }
             } catch (err) {
-                console.log('Error finding user\n', err)
+                console.log('Error finding user', err)
                 res.status(500).json({error: 'Error finding user', err});
             }
         } else {

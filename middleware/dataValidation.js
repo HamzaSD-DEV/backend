@@ -1,18 +1,22 @@
 
 const validator = require("validator");
-function validateUsername(username) {return validator.isAlphanumeric(username, 'en-US', {ignore: '-_'});}
+function validateUsername(username) {
+    return validator.isAlphanumeric(username, 'en-US', {ignore: '-_'});
+}
 function validatePassword(password){
-  return   validator.isStrongPassword(password, {
-        minLength: 8,
-        minLowercase: 0,
-        minUppercase: 1,
-        minNumbers: 0,
-        minSymbols: 0,
-        returnScore: false,
-    })
+  return validator.isStrongPassword(password, {
+      minLength: 8,
+      minLowercase: 0,
+      minUppercase: 1,
+      minNumbers: 0,
+      minSymbols: 0,
+      returnScore: false,
+  });
+
 }
 function validateEmail(email){
-   return validator.isEmail(email)
+   return validator.isEmail(email);
+
 }
 function validateAll(username, email, password, res){
     if (!validateUsername) {
@@ -37,4 +41,4 @@ function validatelogin(loginInput,password,res){
     }
 }
 
-module.exports={validateSignin,validateAll}
+module.exports={validatelogin,validateAll,validateUsername,validatePassword,validateEmail}

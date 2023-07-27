@@ -25,7 +25,7 @@ function createJwtToken(password, existingUser, res) {
     bcrypt.compare(password, existingUser.password, function (err, result) {
         if (result) {
             const token = jwt.sign({existingUser}, jwtSecretKey, {expiresIn: "1h"});
-            return res.status(200).json({message: "Login successfully \n", token: token});
+            return res.status(200).json({message: "Login successfully ", token: token});
         } else
             return res.status(400).json({error: "Wrong password !!"});
     });

@@ -6,8 +6,9 @@ const {verifyToken} = require("../middleware/auth");
 
 router.get('/users',verifyToken, userController.getAllUsers);
 router.get('/users/:id',verifyToken, userController.getUserById);
-router.put('/users/:id/update',verifyToken, userController.updateUserById);
-router.get('/users/:id/delete',verifyToken, userController.deleteUserById);
-
+router.delete('/users/:userId/delete',verifyToken, userController.deleteUserById);
+router.put('/users/:id/update/email',verifyToken, userController.updateEmailById);
+router.put('/users/:id/update/username',verifyToken, userController.updateUsernameById);
+router.put('/users/:id/update/password',verifyToken, userController.updatePasswordById);
 
 module.exports = router;
